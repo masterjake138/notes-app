@@ -95,6 +95,10 @@ export function renameTag(id: string, name: string): Promise<number> {
   return db.tags.update(id, { name: name.trim() });
 }
 
+export function updateTagColor(id: string, color: string): Promise<number> {
+  return db.tags.update(id, { color });
+}
+
 export async function deleteTag(id: string): Promise<void> {
   await db.tags.delete(id);
   const tagged = await db.notes.where("tagIds").equals(id).toArray();

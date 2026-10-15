@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Check,
   FileText,
@@ -8,13 +9,16 @@ import {
   Pencil,
   Pin,
   Plus,
+  Settings,
   Trash2,
   X,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ColorPicker } from "@/components/ui/color-picker";
 import { IconButton } from "@/components/ui/icon-button";
 import { cn } from "@/lib/utils";
-import type { Tag } from "@/lib/db";
+import { TAG_COLORS, type Tag } from "@/lib/db";
+import { usePalette } from "@/lib/palette-store";
 import type { Filter } from "@/store/ui";
 
 interface SidebarProps {
@@ -24,6 +28,7 @@ interface SidebarProps {
   onSelectFilter: (filter: Filter) => void;
   onCreateTag: (name: string) => void;
   onRenameTag: (id: string, name: string) => void;
+  onRecolorTag: (id: string, color: string) => void;
   onDeleteTag: (tag: Tag) => void;
   onNewNote: () => void;
   onCloseDrawer: () => void;
@@ -44,12 +49,15 @@ export function Sidebar({
   onSelectFilter,
   onCreateTag,
   onRenameTag,
+  onRecolorTag,
   onDeleteTag,
   onNewNote,
   onCloseDrawer,
 }: SidebarProps) {
   const [addingTag, setAddingTag] = useState(false);
   const [newTagName, setNewTagName] = useState("");
+  const paletteColors = usePalette((s) => s.colors);
+  const swatches = [...(paletteColors ?? []), ...TAG_COLORS];
 
   const navItems: Array<{ label: string; icon: typeof FileText; filter: Filter; count: number }> = [
     { label: "All notes", icon: FileText, filter: { type: "all" }, count: counts.all },
@@ -170,8 +178,10 @@ export function Sidebar({
                 key={tag.id}
                 tag={tag}
                 active={isActive(filter, { type: "tag", tagId: tag.id })}
+                swatches={swatches}
                 onSelect={() => onSelectFilter({ type: "tag", tagId: tag.id })}
                 onRename={(name) => onRenameTag(tag.id, name)}
+                onRecolor={(color) => onRecolorTag(tag.id, color)}
                 onDelete={() => onDeleteTag(tag)}
               />
             ))}
@@ -179,8 +189,15 @@ export function Sidebar({
         </div>
       </div>
 
-      <div className="border-t border-line p-3">
+      <div className="space-y-2 border-t border-line p-3">
         <ThemeToggle />
+        <Link
+          href="/settings"
+          className="flex h-9 items-center gap-2 rounded-xl px-3 text-sm font-medium text-muted transition-colors hover:bg-elevated hover:text-ink"
+        >
+          <Settings className="h-4 w-4" />
+          Settings
+        </Link>
       </div>
     </aside>
   );
@@ -189,12 +206,14 @@ export function Sidebar({
 interface TagRowProps {
   tag: Tag & { count: number };
   active: boolean;
+  swatches: string[];
   onSelect: () => void;
   onRename: (name: string) => void;
+  onRecolor: (color: string) => void;
   onDelete: () => void;
 }
 
-function TagRow({ tag, active, onSelect, onRename, onDelete }: TagRowProps) {
+function TagRow({ tag, active, swatches, onSelect, onRename, onRecolor, onDelete }: TagRowProps) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(tag.name);
 
@@ -236,15 +255,18 @@ function TagRow({ tag, active, onSelect, onRename, onDelete }: TagRowProps) {
         active ? "bg-accent-soft" : "hover:bg-elevated",
       )}
     >
+      <ColorPicker
+        label={`Colour for ${tag.name}`}
+        value={tag.color}
+        swatches={swatches}
+        onChange={onRecolor}
+        triggerClassName="h-2.5 w-2.5 hover:scale-125"
+      />
       <button
         type="button"
         onClick={onSelect}
         className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
       >
-        <span
-          className="h-2.5 w-2.5 shrink-0 rounded-full"
-          style={{ backgroundColor: tag.color }}
-        />
         <span
           className={cn(
             "truncate text-sm font-medium",

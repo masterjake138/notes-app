@@ -2,12 +2,14 @@
 
 import { useEditorState, type Editor } from "@tiptap/react";
 import {
+  Baseline,
   Bold,
   Braces,
   Code,
   Heading1,
   Heading2,
   Heading3,
+  Highlighter,
   Italic,
   Link as LinkIcon,
   List,
@@ -20,17 +22,26 @@ import {
   Underline,
   Undo,
 } from "lucide-react";
+import { ColorPicker } from "@/components/ui/color-picker";
 import { IconButton } from "@/components/ui/icon-button";
+import { TAG_COLORS } from "@/lib/db";
+import { usePalette } from "@/lib/palette-store";
+import { cn } from "@/lib/utils";
 
 interface EditorToolbarProps {
   editor: Editor;
 }
+
+const DEFAULT_HIGHLIGHT = "#fde68a";
 
 function Divider() {
   return <span className="mx-1 h-5 w-px shrink-0 bg-line" aria-hidden="true" />;
 }
 
 export function EditorToolbar({ editor }: EditorToolbarProps) {
+  const paletteColors = usePalette((s) => s.colors);
+  const swatches = [...(paletteColors ?? []), ...TAG_COLORS, DEFAULT_HIGHLIGHT];
+
   const state = useEditorState({
     editor,
     selector: ({ editor: e }) => ({
@@ -48,6 +59,9 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       blockquote: e.isActive("blockquote"),
       codeBlock: e.isActive("codeBlock"),
       link: e.isActive("link"),
+      highlight: e.isActive("highlight"),
+      highlightColor: (e.getAttributes("highlight").color as string | undefined) ?? null,
+      textColor: (e.getAttributes("textStyle").color as string | undefined) ?? null,
       canUndo: e.can().undo(),
       canRedo: e.can().redo(),
     }),
@@ -89,6 +103,14 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
     </IconButton>
   );
 
+  const swatchButtonClass = (active: boolean) =>
+    cn(
+      "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors",
+      active
+        ? "bg-accent-soft text-accent"
+        : "text-muted hover:bg-elevated hover:text-ink",
+    );
+
   return (
     <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-thin px-2 py-1.5 sm:px-3">
       {btn("Bold", state.bold, () => editor.chain().focus().toggleBold().run(), <Bold className="h-4 w-4" />)}
@@ -96,6 +118,46 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       {btn("Underline", state.underline, () => editor.chain().focus().toggleUnderline().run(), <Underline className="h-4 w-4" />)}
       {btn("Strikethrough", state.strike, () => editor.chain().focus().toggleStrike().run(), <Strikethrough className="h-4 w-4" />)}
       {btn("Inline code", state.code, () => editor.chain().focus().toggleCode().run(), <Code className="h-4 w-4" />)}
+
+      <Divider />
+
+      <ColorPicker
+        label="Highlight"
+        value={state.highlightColor ?? DEFAULT_HIGHLIGHT}
+        swatches={swatches}
+        onChange={(color) => editor.chain().focus().setHighlight({ color }).run()}
+        onClear={() => editor.chain().focus().unsetHighlight().run()}
+        triggerClassName={swatchButtonClass(state.highlight)}
+      >
+        <span className="relative flex h-8 w-8 items-center justify-center">
+          <Highlighter className="h-4 w-4" />
+          {state.highlightColor ? (
+            <span
+              className="absolute bottom-1 h-[3px] w-4 rounded-full"
+              style={{ backgroundColor: state.highlightColor }}
+            />
+          ) : null}
+        </span>
+      </ColorPicker>
+
+      <ColorPicker
+        label="Text colour"
+        value={state.textColor ?? undefined}
+        swatches={swatches}
+        onChange={(color) => editor.chain().focus().setColor(color).run()}
+        onClear={() => editor.chain().focus().unsetColor().run()}
+        triggerClassName={swatchButtonClass(Boolean(state.textColor))}
+      >
+        <span className="relative flex h-8 w-8 items-center justify-center">
+          <Baseline className="h-4 w-4" />
+          {state.textColor ? (
+            <span
+              className="absolute bottom-1 h-[3px] w-4 rounded-full"
+              style={{ backgroundColor: state.textColor }}
+            />
+          ) : null}
+        </span>
+      </ColorPicker>
 
       <Divider />
 

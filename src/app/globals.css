@@ -217,6 +217,15 @@ body {
   cursor: pointer;
 }
 
+/* Highlighted text. The background is a translucent tint, so the theme's text
+   colour stays readable in both light and dark mode. */
+.tiptap mark {
+  border-radius: 0.25em;
+  padding: 0.06em 0.16em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
 .tiptap hr {
   border: none;
   border-top: 1px solid var(--c-line);

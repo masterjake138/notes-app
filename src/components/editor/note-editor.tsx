@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
+import { Highlight } from "@tiptap/extension-highlight";
+import { Color, TextStyle } from "@tiptap/extension-text-style";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import type { JSONContent } from "@tiptap/core";
@@ -19,6 +21,7 @@ import {
 import { EditorToolbar } from "@/components/editor/editor-toolbar";
 import { TagPicker } from "@/components/editor/tag-picker";
 import { IconButton } from "@/components/ui/icon-button";
+import { withAlpha } from "@/lib/color";
 import { cn, countWords, formatFullDate } from "@/lib/utils";
 import { extractText, saveNoteBody, saveNoteTitle } from "@/lib/notes";
 import type { Note, Tag } from "@/lib/db";
@@ -29,13 +32,39 @@ interface NoteEditorProps {
   onBack: () => void;
   onTogglePin: () => void;
   onToggleTag: (tagId: string) => void;
-  onCreateTag: (name: string) => void;
+  onCreateTag: (name: string, color?: string) => void;
+  onRecolorTag: (tagId: string, color: string) => void;
   onTrash: () => void;
   onRestore: () => void;
   onDeleteForever: () => void;
 }
 
 type SaveStatus = "idle" | "saving" | "saved";
+
+/**
+ * The stock Highlight mark paints an opaque background and keeps the theme's
+ * text colour, which makes light text unreadable on bright highlights in dark
+ * mode. We store the plain hex in `data-color` (so the picker round-trips) but
+ * render a translucent background, which reads well on either theme.
+ */
+const PaletteHighlight = Highlight.extend({
+  addAttributes() {
+    return {
+      color: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          element.getAttribute("data-color") || element.style.backgroundColor || null,
+        renderHTML: (attributes: { color?: string | null }) => {
+          if (!attributes.color) return {};
+          return {
+            "data-color": attributes.color,
+            style: `background-color: ${withAlpha(attributes.color, 0.4)}; color: inherit`,
+          };
+        },
+      },
+    };
+  },
+}).configure({ multicolor: true });
 
 function buildExtensions() {
   return [
@@ -50,6 +79,9 @@ function buildExtensions() {
     Placeholder.configure({ placeholder: "Start writing…" }),
     TaskList,
     TaskItem.configure({ nested: true }),
+    TextStyle,
+    Color,
+    PaletteHighlight,
   ];
 }
 
@@ -60,6 +92,7 @@ export function NoteEditor({
   onTogglePin,
   onToggleTag,
   onCreateTag,
+  onRecolorTag,
   onTrash,
   onRestore,
   onDeleteForever,
@@ -181,6 +214,7 @@ export function NoteEditor({
                 selectedIds={note.tagIds}
                 onToggle={onToggleTag}
                 onCreate={onCreateTag}
+                onRecolor={onRecolorTag}
               />
               <IconButton
                 aria-label={note.pinned ? "Unpin note" : "Pin note"}

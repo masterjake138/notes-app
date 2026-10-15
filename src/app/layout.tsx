@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { PaletteSync } from "@/components/palette-sync";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,10 +31,23 @@ export const viewport: Viewport = {
 };
 
 /**
- * Runs synchronously in <head> before first paint so the correct theme is
- * applied without a flash. Preference is stored in localStorage and a cookie.
+ * Runs synchronously in <head> before first paint so the correct theme *and*
+ * colour scheme are applied without a flash. Preferences are stored in
+ * localStorage (theme also mirrored to a cookie).
  */
-const themeScript = `(function(){try{var m=document.cookie.match(/(?:^|; )theme=([^;]*)/);var p=(m&&decodeURIComponent(m[1]))||localStorage.getItem("theme")||"system";if(p!=="light"&&p!=="dark"&&p!=="system"){p="system"}var d=p==="dark"||(p==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var el=document.documentElement;el.setAttribute("data-theme",d?"dark":"light");el.dataset.themePref=p;}catch(e){}})();`;
+const themeScript = `(function(){try{
+var m=document.cookie.match(/(?:^|; )theme=([^;]*)/);
+var p=(m&&decodeURIComponent(m[1]))||localStorage.getItem("theme")||"system";
+if(p!=="light"&&p!=="dark"&&p!=="system"){p="system"}
+var d=p==="dark"||(p==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);
+var el=document.documentElement;
+el.setAttribute("data-theme",d?"dark":"light");
+el.dataset.themePref=p;
+var names=["app","surface","elevated","line","ink","muted","faint","accent","accent-ink","accent-soft","danger","danger-soft"];
+var raw=localStorage.getItem("scheme");
+if(raw){var s=JSON.parse(raw);var t=d?s.dark:s.light;
+if(t){for(var i=0;i<names.length;i++){var v=t[names[i]];if(typeof v==="string"){el.style.setProperty("--c-"+names[i],v);}}}}
+}catch(e){}})();`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -46,6 +60,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="h-full">
+        <PaletteSync />
         <div className="flex h-dvh flex-col overflow-hidden">{children}</div>
       </body>
     </html>

@@ -16,6 +16,7 @@ import {
   setNoteTags,
   togglePin,
   trashNote,
+  updateTagColor,
 } from "@/lib/notes";
 import { useUI, type Filter, type SortKey } from "@/store/ui";
 import { Sidebar } from "@/components/sidebar";
@@ -236,13 +237,16 @@ export default function NotesApp() {
     [],
   );
 
-  const handleCreateTagForNote = useCallback(async (note: Note, name: string) => {
-    const id = await createTag(name);
-    const fresh = await db.notes.get(note.id);
-    if (fresh && !fresh.tagIds.includes(id)) {
-      await setNoteTags(note.id, [...fresh.tagIds, id]);
-    }
-  }, []);
+  const handleCreateTagForNote = useCallback(
+    async (note: Note, name: string, color?: string) => {
+      const id = await createTag(name, color);
+      const fresh = await db.notes.get(note.id);
+      if (fresh && !fresh.tagIds.includes(id)) {
+        await setNoteTags(note.id, [...fresh.tagIds, id]);
+      }
+    },
+    [],
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-1 overflow-hidden bg-app">
@@ -260,6 +264,7 @@ export default function NotesApp() {
           onSelectFilter={handleSelectFilter}
           onCreateTag={(name) => void createTag(name)}
           onRenameTag={(id, name) => void renameTag(id, name)}
+          onRecolorTag={(id, color) => void updateTagColor(id, color)}
           onDeleteTag={handleDeleteTag}
           onNewNote={() => void handleNewNote()}
           onCloseDrawer={() => setSidebarOpen(false)}
@@ -310,7 +315,8 @@ export default function NotesApp() {
           onBack={() => selectNote(null)}
           onTogglePin={() => void togglePin(selectedNote.id)}
           onToggleTag={(tagId) => void handleToggleTag(selectedNote, tagId)}
-          onCreateTag={(name) => void handleCreateTagForNote(selectedNote, name)}
+          onCreateTag={(name, color) => void handleCreateTagForNote(selectedNote, name, color)}
+          onRecolorTag={(tagId, color) => void updateTagColor(tagId, color)}
           onTrash={() => void handleTrash(selectedNote)}
           onRestore={() => void restoreNote(selectedNote.id)}
           onDeleteForever={() => handleDeleteForever(selectedNote)}

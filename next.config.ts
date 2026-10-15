@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   // provides this via the PAGES_BASE_PATH env var at build time. It is unset
   // for user/org sites and for local development.
   basePath: process.env.PAGES_BASE_PATH || undefined,
+  // Emit `/settings/index.html` rather than `settings.html` so routes resolve
+  // cleanly on static hosts (GitHub Pages included).
+  trailingSlash: true,
   // Cache Components / Partial Prefetching are server features and cannot be
   // combined with `output: "export"` (PPR is disabled in export mode). This
   // app is entirely client-side, so they are not needed.
