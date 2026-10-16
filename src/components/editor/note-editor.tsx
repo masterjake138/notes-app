@@ -6,6 +6,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Highlight } from "@tiptap/extension-highlight";
 import { Color, TextStyle } from "@tiptap/extension-text-style";
+import Image from "@tiptap/extension-image";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import type { JSONContent } from "@tiptap/core";
@@ -82,6 +83,10 @@ function buildExtensions() {
     TextStyle,
     Color,
     PaletteHighlight,
+    Image.configure({
+      inline: false,
+      allowBase64: true,
+    }),
   ];
 }
 
@@ -148,6 +153,60 @@ export function NoteEditor({
       attributes: {
         class: "tiptap focus:outline-none",
         spellcheck: "true",
+      },
+      handlePaste: (view, event) => {
+        const items = event.clipboardData?.items;
+        if (!items) return false;
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          if (item.type.startsWith("image/")) {
+            const file = item.getAsFile();
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const src = e.target?.result;
+                if (typeof src === "string") {
+                  const { schema } = view.state;
+                  const node = schema.nodes.image.create({ src });
+                  const transaction = view.state.tr.replaceSelectionWith(node);
+                  view.dispatch(transaction);
+                }
+              };
+              reader.readAsDataURL(file);
+            }
+            event.preventDefault();
+            return true;
+          }
+        }
+        return false;
+      },
+      handleDrop: (view, event) => {
+        const files = event.dataTransfer?.files;
+        if (!files || files.length === 0) return false;
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          if (file.type.startsWith("image/")) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const src = e.target?.result;
+              if (typeof src === "string") {
+                const coordinates = view.posAtCoords({
+                  left: event.clientX,
+                  top: event.clientY,
+                });
+                if (coordinates) {
+                  const node = view.state.schema.nodes.image.create({ src });
+                  const transaction = view.state.tr.insert(coordinates.pos, node);
+                  view.dispatch(transaction);
+                }
+              }
+            };
+            reader.readAsDataURL(file);
+            event.preventDefault();
+            return true;
+          }
+        }
+        return false;
       },
     },
     onUpdate: ({ editor: instance }) => {

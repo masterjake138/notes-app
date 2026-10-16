@@ -8,6 +8,8 @@ import {
   makeSavedPalette,
   readScheme,
   writeScheme,
+  SWEETIE_16_COLORS,
+  SWEETIE_16_SAVED,
   type PaletteSource,
   type SavedPalette,
   type SchemeState,
@@ -67,10 +69,26 @@ export const usePalette = create<PaletteStore>((set, get) => {
 
     hydrate: () => {
       const stored = readScheme();
-      set({ ...stored, hydrated: true });
+      let scheme = stored;
+      if (!scheme.defaultPaletteApplied) {
+        const colors = [...SWEETIE_16_COLORS];
+        const lightTokens = deriveTokens(colors, "light");
+        const darkTokens = deriveTokens(colors, "dark");
+        const saved = remember(stored.saved, SWEETIE_16_SAVED);
+        scheme = {
+          ...stored,
+          light: lightTokens,
+          dark: darkTokens,
+          colors,
+          saved,
+          defaultPaletteApplied: true,
+        };
+        writeScheme(scheme);
+      }
+      set({ ...scheme, hydrated: true });
       if (typeof document !== "undefined") {
         const mode = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
-        applySchemeToDom(stored, mode);
+        applySchemeToDom(scheme, mode);
       }
     },
 

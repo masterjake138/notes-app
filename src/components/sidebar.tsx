@@ -32,6 +32,8 @@ interface SidebarProps {
   onDeleteTag: (tag: Tag) => void;
   onNewNote: () => void;
   onCloseDrawer: () => void;
+  onExportData: () => void;
+  onImportFile: (file: File) => void;
 }
 
 function isActive(filter: Filter, item: Filter): boolean {
@@ -53,6 +55,8 @@ export function Sidebar({
   onDeleteTag,
   onNewNote,
   onCloseDrawer,
+  onExportData,
+  onImportFile,
 }: SidebarProps) {
   const [addingTag, setAddingTag] = useState(false);
   const [newTagName, setNewTagName] = useState("");
@@ -190,6 +194,30 @@ export function Sidebar({
       </div>
 
       <div className="space-y-2 border-t border-line p-3">
+        <div className="flex flex-col gap-1 text-sm">
+          <button
+            type="button"
+            onClick={onExportData}
+            className="flex h-9 items-center gap-2 rounded-xl px-3 text-sm font-medium text-muted transition-colors hover:bg-elevated hover:text-ink"
+          >
+            Export data
+          </button>
+          <label className="flex h-9 cursor-pointer items-center gap-2 rounded-xl px-3 text-sm font-medium text-muted transition-colors hover:bg-elevated hover:text-ink">
+            Import data
+            <input
+              type="file"
+              accept=".json,application/json"
+              hidden
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  onImportFile(file);
+                  e.currentTarget.value = "";
+                }
+              }}
+            />
+          </label>
+        </div>
         <ThemeToggle />
         <Link
           href="/settings"

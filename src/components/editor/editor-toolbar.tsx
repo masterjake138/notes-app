@@ -10,6 +10,7 @@ import {
   Heading2,
   Heading3,
   Highlighter,
+  Image as ImageIcon,
   Italic,
   Link as LinkIcon,
   List,
@@ -177,6 +178,30 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       {btn("Code block", state.codeBlock, () => editor.chain().focus().toggleCodeBlock().run(), <Braces className="h-4 w-4" />)}
       {btn("Link", state.link, promptLink, <LinkIcon className="h-4 w-4" />)}
       {btn("Divider", false, () => editor.chain().focus().setHorizontalRule().run(), <Minus className="h-4 w-4" />)}
+
+      <Divider />
+
+      <label className={swatchButtonClass(false)} title="Add image" aria-label="Add image">
+        <input
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const src = event.target?.result;
+              if (typeof src === "string") {
+                editor.chain().focus().setImage({ src }).run();
+              }
+            };
+            reader.readAsDataURL(file);
+            e.currentTarget.value = "";
+          }}
+        />
+        <ImageIcon className="h-4 w-4" />
+      </label>
 
       <Divider />
 

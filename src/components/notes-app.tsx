@@ -18,6 +18,7 @@ import {
   trashNote,
   updateTagColor,
 } from "@/lib/notes";
+import { exportAndDownload, importData, validateBackup } from "@/lib/backup";
 import { useUI, type Filter, type SortKey } from "@/store/ui";
 import { Sidebar } from "@/components/sidebar";
 import { NoteList } from "@/components/note-list";
@@ -209,6 +210,92 @@ export default function NotesApp() {
     });
   }, [requestConfirm, selectNote]);
 
+  const handleExportData = useCallback(() => {
+    void exportAndDownload();
+  }, []);
+
+  const handleImportFile = useCallback(
+    (file: File) => {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const content = event.target?.result;
+          if (typeof content !== "string") {
+            throw new Error("Failed to read file");
+          }
+          const data = JSON.parse(content);
+          if (!validateBackup(data)) {
+            requestConfirm({
+              title: "Invalid backup file",
+              description: "The selected file doesn't appear to be a valid notes backup.",
+              confirmLabel: "OK",
+              danger: false,
+              onConfirm: () => {},
+            });
+            return;
+          }
+
+          const hasExistingData = (allNotes?.length ?? 0) > 0 || (tags?.length ?? 0) > 0;
+
+          if (hasExistingData) {
+            requestConfirm({
+              title: "Replace existing data?",
+              description: "This will replace all existing notes and tags. This action cannot be undone.",
+              confirmLabel: "Replace",
+              danger: true,
+              onConfirm: async () => {
+                try {
+                  await importData(data, { replace: true });
+                } catch (error) {
+                  requestConfirm({
+                    title: "Import failed",
+                    description:
+                      error instanceof Error ? error.message : "An unexpected error occurred",
+                    confirmLabel: "OK",
+                    danger: false,
+                    onConfirm: () => {},
+                  });
+                }
+              },
+            });
+          } else {
+            try {
+              await importData(data, { replace: true });
+            } catch (error) {
+              requestConfirm({
+                title: "Import failed",
+                description:
+                  error instanceof Error ? error.message : "An unexpected error occurred",
+                confirmLabel: "OK",
+                danger: false,
+                onConfirm: () => {},
+              });
+            }
+          }
+        } catch (error) {
+          requestConfirm({
+            title: "Failed to import backup",
+            description: error instanceof Error ? error.message : "Could not parse the backup file",
+            confirmLabel: "OK",
+            danger: false,
+            onConfirm: () => {},
+          });
+        }
+      };
+      reader.onerror = () => {
+        requestConfirm({
+          title: "Failed to read file",
+          description: "Could not read the selected backup file.",
+          confirmLabel: "OK",
+          danger: false,
+          onConfirm: () => {},
+        });
+      };
+      reader.readAsText(file);
+    },
+    [allNotes?.length, requestConfirm, tags?.length],
+  );
+
   const handleDeleteTag = useCallback(
     (tag: Tag) => {
       requestConfirm({
@@ -268,6 +355,8 @@ export default function NotesApp() {
           onDeleteTag={handleDeleteTag}
           onNewNote={() => void handleNewNote()}
           onCloseDrawer={() => setSidebarOpen(false)}
+          onExportData={handleExportData}
+          onImportFile={handleImportFile}
         />
       </div>
 

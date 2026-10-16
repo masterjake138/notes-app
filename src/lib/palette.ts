@@ -113,9 +113,35 @@ export interface SchemeState {
   /** Colours of the most recently applied palette, offered as swatches. */
   colors?: string[];
   saved: SavedPalette[];
+  defaultPaletteApplied?: boolean;
 }
 
 export const SCHEME_STORAGE_KEY = "scheme";
+export const SWEETIE_16_SAVED: SavedPalette = {
+  id: "sweetie-16",
+  name: "Sweetie 16",
+  slug: "sweetie-16",
+  origin: "builtin",
+  colors: [
+    "#1a1c2c",
+    "#5d275d",
+    "#b13e53",
+    "#ef7d57",
+    "#ffcd75",
+    "#a7f070",
+    "#38b764",
+    "#257179",
+    "#29366f",
+    "#3b5dc9",
+    "#41a6f6",
+    "#73eff7",
+    "#f4f4f4",
+    "#94b0c2",
+    "#566c86",
+    "#333c57",
+  ],
+  createdAt: 0,
+};
 
 /* ------------------------------------------------------------------ *
  * Parsing
@@ -133,6 +159,25 @@ export function uniqueColors(input: unknown): string[] {
   }
   return Array.from(new Set(out));
 }
+
+export const SWEETIE_16_COLORS = [
+  "#1a1c2c",
+  "#5d275d",
+  "#b13e53",
+  "#ef7d57",
+  "#ffcd75",
+  "#a7f070",
+  "#38b764",
+  "#257179",
+  "#29366f",
+  "#3b5dc9",
+  "#41a6f6",
+  "#73eff7",
+  "#f4f4f4",
+  "#94b0c2",
+  "#566c86",
+  "#333c57",
+] as const;
 
 export interface PaletteSource {
   name: string;
